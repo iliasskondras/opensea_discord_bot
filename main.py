@@ -2,6 +2,8 @@ import opensea
 import discord
 import config
 import time
+import pygal
+from datetime import datetime
 from discord.ext import commands
 
 client = commands.Bot(command_prefix = '?')
@@ -35,9 +37,13 @@ async def combinedfloor(ctx, wallet):
     listComplete = False
     offset = 0
     floorPrice = 0
+    collectionList = {}
+    username = None
     while listComplete == False:
         result = api.assets(owner=wallet, offset=offset)
-        collectionList = {}
+        
+        if username is None:
+            username = result['creator']['user']['username']
 
         for i in result['assets']:
             if i['collection']['slug'] in collectionList:
@@ -56,13 +62,31 @@ async def combinedfloor(ctx, wallet):
             listComplete = True
         else:
             offset += 50
+    
+    bar_chart = generate_bar_chart(collectionList, username)
 
     embed = discord.Embed(
-    title="Combined Floor Price of {}'s NFTs".format(ctx.author.display_name),
-    url="https://opensea.io/{}".format(wallet),
-    description="Combined Floor Price: {} ETH".format(round(floorPrice, 4)),
-    color=discord.Color.blue())
+        title="Combined Floor Price of {}'s NFTs".format(username),
+        url="https://opensea.io/{}".format(wallet),
+        description="Combined Floor Price: {} ETH".format(round(floorPrice, 4)),
+        color=discord.Color.blue())
+    
+    file = discord.File(bar_chart, filename="image.svg")
+    embed.set_image(url="attachment://image.svg")
 
-    await ctx.send(embed=embed)
-
+    await ctx.send(file=file, embed=embed)
+    
+def generate_bar_chart(collection, username):
+    bar_chart = pygal.Bar()
+    bar_chart.title = "{}'s NFT floors".format(username)
+    
+    for key, value in collection.items():
+        bar_chart.add(key, value)
+        
+    chart_name = "chart_{}_{}.svg".format(username, datetime.now())
+    bar_chart.render_to_file(chart_name)
+    
+    return chart_name
+    
+    
 client.run(config.keys['DISCORD_BOT_KEY'])
