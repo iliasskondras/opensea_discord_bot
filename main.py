@@ -1,11 +1,11 @@
 import opensea
 import discord
-import config
+import config2
 import time
 from discord.ext import commands
 
 client = commands.Bot(command_prefix = '?')
-api = opensea.OpenseaAPI(apikey=config.keys['OPENSEA_API_KEY'])
+api = opensea.OpenseaAPI(apikey=config2.keys['OPENSEA_API_KEY'])
 
 @client.event
 async def on_ready():
@@ -31,23 +31,38 @@ async def nfts(ctx, wallet):
  
 @client.command()
 async def combinedfloor(ctx, wallet):
-    result = api.assets(owner=wallet)
-    
-    fp = 0
-    for i in result['assets']:
-        time.sleep(.5)
-        collection = api.collection(collection_slug=i['collection']['slug'])['collection']
-        try:
-            fp += collection['stats']['floor_price']
-        except:
-            fp += 0
+
+    listComplete = False
+    offset = 0
+    floorPrice = 0
+    while listComplete == False:
+        result = api.assets(owner=wallet, offset=offset)
+        collectionList = {}
+
+        for i in result['assets']:
+            if i['collection']['slug'] in collectionList:
+                floorPrice += collectionList[i['collection']['slug']]
+            else:
+                time.sleep(.5)     
+                collection = api.collection(collection_slug=i['collection']['slug'])['collection']
+                try:
+                    floorPrice += collection['stats']['floor_price']
+                    collectionList[i['collection']['slug']] = collection['stats']['floor_price']
+                except:
+                    floorPrice += 0
+                    collectionList[i['collection']['slug']] = 0
+
+        if len(result['assets']) < 50:
+            listComplete = True
+        else:
+            offset += 50
 
     embed = discord.Embed(
     title="Combined Floor Price of {}'s NFTs".format(ctx.author.display_name),
     url="https://opensea.io/{}".format(wallet),
-    description="Combined Floor Price: {} ETH".format(round(fp, 4)),
+    description="Combined Floor Price: {} ETH".format(round(floorPrice, 4)),
     color=discord.Color.blue())
 
     await ctx.send(embed=embed)
 
-client.run(config.keys['DISCORD_BOT_KEY'])
+client.run(config2.keys['DISCORD_BOT_KEY'])
