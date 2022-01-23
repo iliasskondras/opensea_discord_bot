@@ -1,11 +1,11 @@
 import opensea
 import discord
-import config2
+import config
 import time
 from discord.ext import commands
 
 client = commands.Bot(command_prefix = '?')
-api = opensea.OpenseaAPI(apikey=config2.keys['OPENSEA_API_KEY'])
+api = opensea.OpenseaAPI(apikey=config.keys['OPENSEA_API_KEY'])
 
 @client.event
 async def on_ready():
@@ -65,4 +65,4 @@ async def combinedfloor(ctx, wallet):
 
     await ctx.send(embed=embed)
 
-client.run(config2.keys['DISCORD_BOT_KEY'])
+client.run(config.keys['DISCORD_BOT_KEY'])
