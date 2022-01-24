@@ -32,8 +32,7 @@ async def nfts(ctx, wallet):
     await ctx.send(embed=embed)
  
 @client.command()
-async def combinedfloor(ctx, wallet):
-
+async def totalFloor(ctx, wallet):
     listComplete = False
     offset = 0
     floorPrice = 0
@@ -44,7 +43,10 @@ async def combinedfloor(ctx, wallet):
         result = api.assets(owner=wallet, offset=offset)
         
         if username is None:
-            username = result['assets'][0]['owner']['user']['username']
+            try:
+                username = result['assets'][0]['owner']['user']['username']
+            except:
+                username = "User"
 
         for i in result['assets']:
             if i['collection']['slug'] in collectionList:
@@ -60,21 +62,18 @@ async def combinedfloor(ctx, wallet):
                 except:
                     floorPrice += 0
                     collectionList[i['collection']['slug']] = 0
+
         if len(result['assets']) < 50:
             listComplete = True
         else:
             offset += 50
-        
 
-    
     bar_chart = generate_bar_chart(totalETHPerCollection, username)
-
     embed = discord.Embed(
         title="Combined Floor Price of {}'s NFTs".format(username),
         url="https://opensea.io/{}".format(wallet),
         description="Combined Floor Price: {} ETH".format(round(floorPrice, 4)),
         color=discord.Color.blue())
-
     file = discord.File(bar_chart, filename="image.png")
     embed.set_image(url="attachment://image.png")
 
